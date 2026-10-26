@@ -22,23 +22,23 @@ function iframe({url,data,tool}){
  return`<iframe src="${esc(publicURL(url))}" title="${toolNames[tool]} · ${esc(data.title)}" width="100%" height="${h}" style="display:block;width:100%;border:0;border-radius:12px" loading="lazy"></iframe>`;
 }
 function wrap(value,width){const text=String(value).replace(/\s+/g,' ').trim();const lines=[];let line='';for(const word of text.split(' ')){if(!word)continue;const pieces=word.length>width?word.match(new RegExp('.{1,'+width+'}','gu')):[word];for(const piece of pieces){if(line&&line.length+piece.length+1>width){lines.push(line);line='';}line+=(line?' ':'')+piece;}}if(line)lines.push(line);return lines.length?lines:[''];}
-function svg(data,{sort='seats',dateLabel=''}={}){
- validData(data);const format=(v,d=0)=>new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
+function svg(data,{sort='seats',dateLabel='',theme='dark'}={}){
+ validData(data);const dark=theme!=='light',ink=dark?'#f1f4e9':'#192112',muted=dark?'#a8b79a':'#59694b',background=dark?'#1c2317':'#f4f5ef',line=dark?'#34402b':'#d7dfc9';const format=(v,d=0)=>new Intl.NumberFormat('es-ES',{minimumFractionDigits:d,maximumFractionDigits:d}).format(v);
  const titleLines=wrap(data.title,48),territoryLines=wrap(data.territory+(data.demo?' · SIMULACIÓN':''),110),sourceLines=wrap('Fuente: '+data.source,105);
- const header=30+territoryLines.length*17+titleLines.length*36+40,footer=50+sourceLines.length*17,H=header+data.parties.length*62+footer;
+ const header=30+territoryLines.length*20+titleLines.length*40+40,footer=55+sourceLines.length*20,H=header+data.parties.length*70+footer;
  const parties=[...data.parties].sort((a,b)=>sort==='name'?a.name.localeCompare(b.name,'es'):b[sort]-a[sort]||b.seats-a.seats),max=Math.max(1,...parties.map(p=>p.pct));
- const text=(x,y,value,size=16,fill='#33432f',extra='')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${extra}>${esc(value)}</text>`;
- let body=territoryLines.map((s,i)=>text(45,32+i*17,s,11,'#65775c')).join('');
- const titleTop=32+territoryLines.length*17+19;body+=titleLines.map((s,i)=>text(45,titleTop+i*36,s,30,'#253b2c','font-weight="700"')).join('');
- body+=text(810,header-13,'% VOTO',11,'#65775c')+text(950,header-13,'ESC.',11,'#65775c','text-anchor="end"');
+ const text=(x,y,value,size=18,fill=ink,extra='')=>`<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" ${extra}>${esc(value)}</text>`;
+ let body=territoryLines.map((s,i)=>text(45,32+i*20,s,13,muted)).join('');
+ const titleTop=32+territoryLines.length*20+21;body+=titleLines.map((s,i)=>text(45,titleTop+i*40,s,34,ink,'font-weight="700"')).join('');
+ body+=text(810,header-13,'% VOTO',13,muted)+text(950,header-13,'ESC.',13,muted,'text-anchor="end"');
  for(const [i,p]of parties.entries()){
-  const y=header+i*62,short=[...p.name].length>25?[...p.name].slice(0,24).join('')+'…':p.name;
-  body+=`<g><title>${esc(p.name)}</title><rect x="45" y="${y}" width="9" height="25" rx="3" fill="${p.color}"/>${text(68,y+19,short,16)}<rect x="310" y="${y}" width="${p.pct/max*470}" height="27" rx="4" fill="${p.color}"/>${text(810,y+20,format(p.pct,1)+' %',18,'#33432f','font-weight="700"')}${text(950,y+20,format(p.seats),18,'#65775c','text-anchor="end"')}</g>`;
+  const y=header+i*70,short=[...p.name].length>25?[...p.name].slice(0,24).join('')+'…':p.name;
+  body+=`<g><title>${esc(p.name)}</title><rect x="45" y="${y}" width="9" height="25" rx="3" fill="${p.color}"/>${text(68,y+19,short,18)}<rect x="310" y="${y}" width="${p.pct/max*470}" height="27" rx="4" fill="${p.color}"/>${text(810,y+20,format(p.pct,1)+' %',20,ink,'font-weight="700"')}${text(950,y+20,format(p.seats),20,muted,'text-anchor="end"')}</g>`;
  }
- const footY=header+data.parties.length*62;body+=`<line x1="45" x2="955" y1="${footY}" y2="${footY}" stroke="#e4e8dc"/>`;
- body+=sourceLines.map((s,i)=>text(45,footY+23+i*17,s,11,'#65775c')).join('');
- body+=text(45,H-13,dateLabel,10,'#65775c')+text(955,H-13,'electa · Dröma',14,'#33503b','text-anchor="end"');
- return`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${H}" viewBox="0 0 1000 ${H}" role="img" aria-label="${esc(data.title)}"><rect width="100%" height="100%" fill="#fff"/><g font-family="Arial,sans-serif">${body}</g></svg>`;
+ const footY=header+data.parties.length*70;body+=`<line x1="45" x2="955" y1="${footY}" y2="${footY}" stroke="${line}"/>`;
+ body+=sourceLines.map((s,i)=>text(45,footY+23+i*20,s,13,muted)).join('');
+ body+=text(45,H-13,dateLabel,12,muted)+text(955,H-13,'electa · Dröma',16,ink,'text-anchor="end"');
+ return`<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="${H}" viewBox="0 0 1000 ${H}" role="img" aria-label="${esc(data.title)}"><rect width="100%" height="100%" fill="${background}"/><g font-family="Arial,sans-serif">${body}</g></svg>`;
 }
 root.ElectaExports={buildHTML,csv,iframe,publicURL,svg};
 })(typeof window!=='undefined'?window:globalThis);

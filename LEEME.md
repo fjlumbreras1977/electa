@@ -1,8 +1,12 @@
-# Electa by Dröma · 1.1
+# Electa by Dröma · 1.2.1
 
 Estudio electoral para periodistas y piezas interactivas para lectores.
 
 ## Instalar el módulo en Dröma
+
+Para abrirlo directamente en el ordenador, utiliza `ABRIR_ELECTA.html`, situado en la raíz del ZIP. Incluye estilos, fuentes, scripts y el estudio avanzado dentro del mismo archivo. También se entrega con el nombre `Electa_Droma_v1_2_1.html`.
+
+Para instalar la web en el hosting:
 
 1. Descomprime el ZIP y sube la carpeta `electa` a una ruta de tu hosting, por ejemplo `/electa/`.
 2. Abre esa dirección. No necesita compilación, base de datos ni instalación de paquetes.
@@ -44,7 +48,7 @@ Se bloquea la exportación de datos incoherentes, negativos, no finitos o con es
 
 Todos los datos iniciales y ejemplos son ficticios y están identificados como simulación. Introducir el nombre de un organismo no verifica el carácter oficial de los datos.
 
-Los archivos `ejemplos/` son piezas autónomas de demostración. No requieren recursos externos. La tipografía del editor puede descargarse de Google Fonts, con Arial como alternativa; el HTML autónomo utiliza tipografías locales y no carga fuentes externas.
+Los archivos `ejemplos/` son piezas autónomas de demostración. No requieren recursos externos. La tipografía Manrope y Space Grotesk se incluye en los estilos del editor y del HTML autónomo, sin consultas externas a servidores de fuentes. Se usa Arial como alternativa. La información de licencia figura en FUENTES.txt.
 
 ## Estudio gráfico avanzado
 
@@ -62,3 +66,13 @@ La carpeta `studio/` conserva Electa v0.5 y sus funciones previas para gráficos
 - Se evita duplicar las capas avanzadas y se bloquea la exportación de cifras inválidas. Cancelar el restablecimiento mantiene la procedencia de los datos.
 
 Los CSV que no incluyan porcentaje pero sí votos calculan el porcentaje sobre los votos de las candidaturas importadas. Una celda numérica vacía dentro de una columna presente se considera un dato pendiente y debe completarse. El editor principal admite hasta 100 candidaturas; el estudio gráfico avanzado conserva su límite de 40. No se recortan listas importadas silenciosamente.
+
+
+## Diseño de la versión 1.2
+
+Identidad visual del estudio de sonido de Dröma: negro #101110, paneles oliva #1c2317, acento lima #d9ff62 y texto claro #f1f4e9. Manrope se utiliza en el cuerpo y Space Grotesk en los titulares. Se aumenta la letra en navegación, formularios, tablas, botones, pies de gráfico y exportaciones. Las piezas conservan sus variantes clara y nocturna; los colores de los partidos siguen siendo editables por el periodista.
+
+
+## Entrega 1.2.1
+
+Se utiliza un nombre de descarga nuevo para distinguir este paquete de los anteriores. El HTML autónomo incorpora todos los recursos visuales y de funcionamiento: mantiene la paleta negra, oliva y lima sin hojas de estilo externas. La versión para hosting utiliza URLs de recursos con versión para evitar la reutilización de CSS antiguo. Los proyectos guardados antes de la identidad Dröma se abren inicialmente en Nocturno Dröma, conservando sus datos; después se puede elegir y guardar el tema claro.

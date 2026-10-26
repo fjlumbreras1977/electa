@@ -1,0 +1,11 @@
+Fuentes utilizadas por Dröma: Manrope y Space Grotesk.
+Archivos originales del sitio de referencia facilitado por el usuario:
+https://fjlumbreras1977.github.io/Droma/assets/fonts.css
+
+Copyright 2019 The Manrope Project Authors (https://github.com/sharanda/manrope)
+
+http://scripts.sil.org/OFL
+
+Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)
+
+https://scripts.sil.org/OFL
