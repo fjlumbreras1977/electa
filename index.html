@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Electa, el estudio electoral de Dröma. Introduce tus datos y crea herramientas electorales interactivas para tu audiencia.">
+<meta name="theme-color" content="#f6f5f1"><title>Electa · El estudio electoral de Dröma</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg"><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a href="#main" class="skip">Saltar al contenido</a>
+<div id="app"></div><div id="toast" role="status" aria-live="polite"></div>
+<dialog id="publishDialog" aria-labelledby="publishTitle"></dialog>
+<dialog id="projectDialog" aria-labelledby="projectTitle"></dialog>
+<input id="importFile" type="file" accept=".json,application/json" hidden>
+<input id="csvFile" type="file" accept=".csv,text/csv" hidden>
+<script src="core.js"></script>
+<script src="exports.js"></script>
+<script src="app.js"></script>
+</body></html>

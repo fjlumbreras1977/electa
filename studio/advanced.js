@@ -1,0 +1,84 @@
+/* Electa Studio 0.2 — editor extensions. Offline; no official live data. */
+(()=>{
+'use strict';
+const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const S=()=>state;
+const extraDefault=()=>({coalition:[],previous:[],polls:[],events:[{time:'09:00',title:'Apertura de colegios'},{time:'14:00',title:'Primer avance de participación'},{time:'18:00',title:'Segundo avance de participación'},{time:'20:00',title:'Cierre de colegios'}],regions:[],overlay:false,showTimestamp:true});
+function ensure(){const s=S();for(const [k,v] of Object.entries(extraDefault()))if(!Array.isArray(s[k])&&k!=='overlay'&&k!=='showTimestamp'||s[k]===undefined)s[k]=structuredClone(v);if(!s.previous.length)s.previous=s.parties.map(p=>({name:p.name,seats:p.seats,pct:p.pct}));if(!s.polls.length)s.polls=s.parties.map(p=>({name:p.name,low:Math.max(0,p.pct-2),high:Math.min(100,p.pct+2)}));}
+const controls=document.querySelector('.controls');const box=document.createElement('section');box.id='advanced';box.className='advanced-controls';controls.appendChild(box);
+const style=document.createElement('style');style.textContent=`.advanced-controls{border-top:1px solid var(--line,#344156);margin-top:22px;padding-top:12px}.advanced-controls h3{font-size:14px;margin:14px 0 10px}.adv-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.adv-row{display:grid;grid-template-columns:1fr 75px 75px;gap:7px;margin-bottom:7px}.adv-row input,.adv-grid input,.adv-grid select,.advanced-controls input{min-width:0;width:100%;box-sizing:border-box}.adv-check{display:flex;gap:8px;align-items:center;margin:8px 0;font-size:12px}.adv-check input{width:auto}.adv-actions{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.adv-actions button{font-size:12px}.adv-help{font-size:12px;line-height:1.5;opacity:.75}.adv-events{display:grid;grid-template-columns:80px 1fr 28px;gap:6px;margin-bottom:7px}.adv-events input{min-width:0}.adv-warning{padding:9px;border:1px solid #d9a346;border-radius:8px;font-size:12px;margin-top:10px}.coalition-pick{display:flex;gap:8px;align-items:center;margin:9px 0;font-size:13px}.coalition-pick input{width:auto}.adv-section{display:none}.adv-section.active{display:block}`;document.head.appendChild(style);
+const oldRender=renderAll,oldDraw=draw;
+function makeControls(){ensure();const s=S(),m=s.module;box.innerHTML=`<div class="panel-title compact">Herramientas avanzadas <span>02 / DATOS</span></div>
+<section class="adv-section ${m==='coalitions'?'active':''}"><h3>Simulador de pactos</h3><p class="adv-help">Selecciona los partidos que formarían una coalición.</p>${s.parties.map((p,i)=>`<label class="coalition-pick"><input type="checkbox" data-coalition="${i}" ${s.coalition.includes(i)?'checked':''}><span style="color:${p.color}">●</span> ${escapeHTML(p.name)} · ${p.seats} escaños</label>`).join('')}</section>
+<section class="adv-section ${m==='history'?'active':''}"><h3>Elección anterior</h3><p class="adv-help">Introduce los escaños de la convocatoria anterior. La comparación mostrará la variación real entre los dos datos introducidos.</p>${s.parties.map((p,i)=>`<div class="adv-row"><span style="font-size:12px;align-self:center">${escapeHTML(p.name)}</span><input aria-label="Escaños anteriores ${escapeHTML(p.name)}" type="number" min="0" data-previous="${i}" value="${s.previous.find(x=>x.name===p.name)?.seats??0}"><span style="font-size:12px;align-self:center">anteriores</span></div>`).join('')}</section>
+<section class="adv-section ${m==='polls'?'active':''}"><h3>Horquillas de sondeo (%)</h3>${s.parties.map((p,i)=>{const poll=s.polls.find(x=>x.name===p.name)||{low:p.pct,high:p.pct};return `<div class="adv-row"><span style="font-size:12px;align-self:center">${escapeHTML(p.name)}</span><input aria-label="Mínimo ${escapeHTML(p.name)}" type="number" step=".1" min="0" max="100" data-poll="${i}" data-bound="low" value="${poll.low}"><input aria-label="Máximo ${escapeHTML(p.name)}" type="number" step=".1" min="0" max="100" data-poll="${i}" data-bound="high" value="${poll.high}"></div>`}).join('')}<p class="adv-help">Columnas: mínimo / máximo. Son estimaciones, no resultados.</p></section>
+<section class="adv-section ${m==='timeline'?'active':''}"><h3>Hitos de la jornada</h3><div id="advEvents">${s.events.map((e,i)=>`<div class="adv-events"><input aria-label="Hora" data-event="${i}" data-field="time" value="${escapeHTML(e.time)}"><input aria-label="Evento" data-event="${i}" data-field="title" value="${escapeHTML(e.title)}"><button data-remove-event="${i}" title="Eliminar">×</button></div>`).join('')}</div><button class="btn ghost small" id="addEvent">+ Añadir hito</button></section>
+<section class="adv-section ${m==='map'?'active':''}"><h3>Cartografía GeoJSON</h3><p class="adv-help">Importa un archivo GeoJSON con polígonos de territorios. Se dibujarán los límites reales incluidos en el archivo. Asigna el ganador de cada territorio en el panel de resultados. Los territorios sin asignar se muestran en gris.</p><label class="upload">Importar GeoJSON<input type="file" id="geoFile" accept=".geojson,.json,application/geo+json" hidden></label><button class="btn ghost full" id="clearMap" style="margin-top:8px">Quitar cartografía</button><p class="adv-help" id="geoStatus">${s.regions.length} territorios cargados</p></section>
+<section class="adv-section ${m==='broadcast'?'active':''}"><h3>Salida para realización</h3><label class="adv-check"><input id="overlay" type="checkbox" ${s.overlay?'checked':''}> Fondo transparente para grafismos</label><p class="adv-help">Exporta un PNG transparente para usarlo en OBS, vMix o software de realización. También puedes abrir la vista previa en pantalla completa.</p></section>
+<div class="adv-actions"><button class="btn outline" id="downloadHTML">HTML autónomo</button><button class="btn outline" id="downloadOverlay">PNG overlay</button></div>
+<p class="adv-help">Los datos de muestra son ficticios. Electa no consulta ni verifica fuentes oficiales automáticamente.</p>`;
+box.querySelectorAll('[data-coalition]').forEach(el=>el.onchange=()=>{const i=+el.dataset.coalition;s.coalition=el.checked?[...new Set([...s.coalition,i])]:s.coalition.filter(x=>x!==i);if(Array.isArray(s.pactRoles))s.pactRoles[i]=el.checked?'gobierno':'oposicion';draw()});
+box.querySelectorAll('[data-previous]').forEach(el=>el.oninput=()=>{const p=s.parties[+el.dataset.previous];let r=s.previous.find(x=>x.name===p.name);if(!r){r={name:p.name,seats:0,pct:0};s.previous.push(r)}r.seats=Math.max(0,Number(el.value)||0);draw()});
+box.querySelectorAll('[data-poll]').forEach(el=>el.oninput=()=>{const p=s.parties[+el.dataset.poll];let r=s.polls.find(x=>x.name===p.name);if(!r){r={name:p.name,low:0,high:0};s.polls.push(r)}r[el.dataset.bound]=Math.max(0,Math.min(100,Number(el.value)||0));draw()});
+box.querySelectorAll('[data-event]').forEach(el=>el.oninput=()=>{s.events[+el.dataset.event][el.dataset.field]=el.value;draw()});
+box.querySelectorAll('[data-remove-event]').forEach(el=>el.onclick=()=>{s.events.splice(+el.dataset.removeEvent,1);makeControls();draw()});
+const add=box.querySelector('#addEvent');if(add)add.onclick=()=>{s.events.push({time:'21:00',title:'Nuevo acontecimiento'});makeControls();draw()};
+const overlay=box.querySelector('#overlay');if(overlay)overlay.onchange=()=>{s.overlay=overlay.checked;draw()};
+const geo=box.querySelector('#geoFile');if(geo)geo.onchange=async()=>{const file=geo.files[0];if(!file)return;try{if(file.size>10000000)throw Error('El GeoJSON supera los 10 MB.');const raw=JSON.parse(await file.text());if(raw.type!=='FeatureCollection'||!Array.isArray(raw.features))throw Error('Se requiere FeatureCollection');const features=raw.features.filter(f=>f&&f.geometry&&['Polygon','MultiPolygon'].includes(f.geometry.type));if(!features.length)throw Error('No se encontraron polígonos.');s.regions=ElectaGeometry.normalize(features.map((f,i)=>({name:String(f.properties?.name||f.properties?.NAME_1||f.properties?.nombre||`Territorio ${i+1}`).slice(0,80),geometry:f.geometry})));makeControls();draw();document.dispatchEvent(new CustomEvent('electa:geometry'));}catch(e){toast('Error GeoJSON: '+e.message)}geo.value=''};
+
+const clear=box.querySelector('#clearMap');if(clear)clear.onclick=()=>{s.regions=[];makeControls();draw();document.dispatchEvent(new CustomEvent('electa:geometry'))};
+box.querySelector('#downloadHTML').onclick=()=>{const svg=svgText();download(slug()+'-publicacion.html',`<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(s.title)}</title><style>html,body{margin:0;background:transparent}svg{width:100%;height:auto;display:block}</style>${svg}</html>`,'text/html')};
+box.querySelector('#downloadOverlay').onclick=()=>exportOverlay();
+}
+function decorate(){ensure();const s=S();const svg=document.getElementById('graphic');if(!svg)return;const ns='http://www.w3.org/2000/svg';const vb=svg.viewBox.baseVal,w=vb.width,h=vb.height;const fg=s.theme==='light'?'#17243a':'#f7f9ff';const muted=s.theme==='light'?'#617087':'#b0bed0';const panel=s.theme==='light'?'#e5ebf3':'#223148';const y0=s.ratio==='9:16'?260:180;svg.querySelectorAll('#electa-advanced').forEach(n=>n.remove());const group=document.createElementNS(ns,'g');group.id='electa-advanced';
+function text(x,y,value,size=20,color=fg,weight=600){const e=document.createElementNS(ns,'text');e.setAttribute('x',x);e.setAttribute('y',y);e.setAttribute('fill',color);e.setAttribute('font-size',size);e.setAttribute('font-weight',weight);e.setAttribute('font-family','Arial,sans-serif');e.textContent=String(value);group.appendChild(e)}
+function rect(x,y,width,height,color,rx=6){const e=document.createElementNS(ns,'rect');for(const [k,v] of Object.entries({x,y,width:Math.max(0,width),height,fill:color,rx}))e.setAttribute(k,v);group.appendChild(e)}
+if(['coalitions','history','polls','timeline','map'].includes(s.module)){
+// Cover the old demo visual, preserving header and footer.
+rect(45,y0-25,870,Math.max(100,h-y0-95),s.theme==='light'?'#f7f9fc':'#101a2a',0);
+if(s.module==='coalitions'){const selected=s.parties.filter((_,i)=>s.coalition.includes(i));const count=selected.reduce((n,p)=>n+(Number(p.seats)||0),0);const majority=Math.max(1,Number(s.majority)||1);text(60,y0+20,'SIMULADOR DE COALICIONES',19,muted,700);text(60,y0+95,`${count} / ${majority}`,66,fg,800);text(60,y0+135,count>=majority?'MAYORÍA ALCANZADA':'SIN MAYORÍA ABSOLUTA',21,count>=majority?'#b5e767':'#f3b86b',700);rect(60,y0+160,830,25,panel,12);rect(60,y0+160,830*Math.min(1,count/majority),25,'#b5e767',12);selected.slice(0,8).forEach((p,i)=>{rect(60+(i%2)*410,y0+210+Math.floor(i/2)*48,12,12,p.color,3);text(82+(i%2)*410,y0+221+Math.floor(i/2)*48,`${p.name} · ${p.seats}`,18)});if(!selected.length)text(60,y0+240,'Selecciona partidos en el panel lateral.',18,muted,400)}
+if(s.module==='history'){text(60,y0+20,'CAMBIO DE ESCAÑOS RESPECTO A LA ELECCIÓN ANTERIOR',18,muted,700);s.parties.slice(0,7).forEach((p,i)=>{const yy=y0+68+i*55;const prev=s.previous.find(x=>x.name===p.name)?.seats??0;const delta=p.seats-prev;text(60,yy,p.name.slice(0,22),18);rect(320,yy-17,400,18,panel);rect(320,yy-17,400*Math.min(1,p.seats/Math.max(1,s.seats)),18,p.color);text(740,yy,`${p.seats} (${delta>0?'+':''}${delta})`,19,delta>0?'#86cfa1':delta<0?'#ef8b92':muted,700)})}
+if(s.module==='polls'){text(60,y0+20,'ESTIMACIÓN DE VOTO · HORQUILLAS',19,muted,700);s.parties.slice(0,7).forEach((p,i)=>{const yy=y0+65+i*55;const r=s.polls.find(x=>x.name===p.name)||{low:p.pct,high:p.pct};const low=Math.max(0,Math.min(100,r.low)),high=Math.max(low,Math.min(100,r.high));text(60,yy,p.name.slice(0,20),18);rect(320,yy-17,400,17,panel);rect(320+400*low/100,yy-17,400*(high-low)/100,17,p.color);text(750,yy,`${low.toLocaleString('es-ES')}–${high.toLocaleString('es-ES')} %`,18,fg,700)})}
+if(s.module==='timeline'){text(60,y0+20,'CRONOLOGÍA EDITABLE',19,muted,700);s.events.slice(0,8).forEach((e,i)=>{const yy=y0+62+i*54;rect(60,yy-20,110,38,panel,7);text(78,yy+5,e.time.slice(0,12),19,'#b5e767',700);text(192,yy+5,e.title.slice(0,46),19)})}
+if(s.module==='map'){if(!s.regions.length){text(60,y0+45,'IMPORTA UN GEOJSON PARA VER EL MAPA REAL',23,fg,700);text(60,y0+85,'Los límites y la proyección proceden del archivo que elijas.',17,muted,400)}else{const polys=[];for(const f of s.regions){const pp=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;for(const p of pp)for(const ring of p)for(const xy of ring)if(Number.isFinite(xy?.[0])&&Number.isFinite(xy?.[1]))polys.push(xy)}const [minx,miny,maxx,maxy]=ElectaGeometry.bounds(polys);const scale=Math.min(810/(maxx-minx||1),Math.max(100,h-y0-130)/(maxy-miny||1));const xx=x=>70+(x-minx)*scale,yy=y=>y0+35+(maxy-y)*scale;for(let i=0;i<s.regions.length;i++){const f=s.regions[i],pp=f.geometry.type==='Polygon'?[f.geometry.coordinates]:f.geometry.coordinates;let d='';for(const poly of pp)for(const ring of poly){d+=ring.map((xy,j)=>`${j?'L':'M'}${xx(xy[0]).toFixed(2)},${yy(xy[1]).toFixed(2)}`).join(' ')+' Z '}const path=document.createElementNS(ns,'path');path.setAttribute('d',d);path.setAttribute('fill-rule','evenodd');path.setAttribute('fill',s.parties.find(p=>p.name===f.partyName)?.color||'#667589');path.setAttribute('stroke',s.theme==='light'?'#fff':'#152236');path.setAttribute('stroke-width','1.3');const title=document.createElementNS(ns,'title');title.textContent=f.name+' · '+(f.partyName||'Sin resultado asignado');path.appendChild(title);group.appendChild(path)}text(60,h-103,`${s.regions.length} territorios · Sin asignación se muestran en gris`,15,muted,400)}}
+}
+svg.appendChild(group);
+// Reserve a permanent, opaque caption band and fit all chart artwork above it.
+// Apply the same layout in preview and in SVG/PNG/HTML exports.
+const content=svg.querySelector('#electa-chart-content');
+const footer=svg.querySelector('#electa-footer');
+const chartTop=205, chartBottom=h-112, availableHeight=Math.max(1,chartBottom-chartTop);
+function fitChart(node){
+  if(!node)return;
+  node.removeAttribute('transform');
+  let bounds;
+  try{bounds=node.getBBox()}catch(e){return}
+  if(!bounds || !bounds.width || !bounds.height)return;
+  const scale=Math.min(1, 850/bounds.width, availableHeight/bounds.height);
+  const tx=60+(850-bounds.width*scale)/2-bounds.x*scale;
+  const ty=chartTop+(availableHeight-bounds.height*scale)/2-bounds.y*scale;
+  node.setAttribute('transform',`translate(${tx.toFixed(2)} ${ty.toFixed(2)}) scale(${scale.toFixed(5)})`);
+}
+if(group.childNodes.length){
+  // Advanced modules replace their original demo graphic; fit the replacement only.
+  if(content)content.setAttribute('visibility','hidden');
+  fitChart(group);
+}else fitChart(content);
+// Footer is always drawn last, outside chart transforms.
+if(footer)svg.appendChild(footer);
+if(s.overlay&&s.module==='broadcast'){const bg=svg.querySelector('rect');if(bg)bg.setAttribute('fill','transparent')}
+}
+function exportOverlay(){const s=S(),original=s.overlay;s.overlay=true;draw();const svg=svgText();s.overlay=original;draw();const blob=new Blob([svg],{type:'image/svg+xml'}),url=URL.createObjectURL(blob),img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);c.toBlob(b=>{if(b)download(slug()+'-overlay.png',b,'image/png');URL.revokeObjectURL(url)},'image/png')};img.onerror=()=>{URL.revokeObjectURL(url);toast('No se pudo exportar overlay')};img.src=url}
+renderAll=function(){oldRender();makeControls();decorate()};draw=function(){oldDraw();decorate()};
+const oldBuildRows=buildRows;buildRows=function(){oldBuildRows();if(box.isConnected&&box.innerHTML)makeControls()};
+const oldNormalize=normalize;normalize=function(p){
+ const result=oldNormalize(p);for(const [k,v]of Object.entries(extraDefault()))if(p[k]!==undefined)result[k]=p[k];
+ result.previous=Array.isArray(p.previous)?p.previous.filter(x=>x&&typeof x.name==='string'&&Number.isSafeInteger(x.seats)&&x.seats>=0).map(x=>({name:x.name.slice(0,70),seats:x.seats,pct:Number.isFinite(x.pct)?x.pct:0})):[];
+ result.polls=Array.isArray(p.polls)?p.polls.filter(x=>x&&typeof x.name==='string'&&Number.isFinite(x.low)&&Number.isFinite(x.high)&&x.low>=0&&x.high<=100&&x.high>=x.low).map(x=>({name:x.name.slice(0,70),low:x.low,high:x.high})):[];
+ result.events=Array.isArray(p.events)?p.events.filter(x=>x&&typeof x.time==='string'&&typeof x.title==='string').slice(0,100).map(x=>({time:x.time.slice(0,12),title:x.title.slice(0,200)})):extraDefault().events;
+ result.coalition=Array.isArray(p.coalition)?p.coalition.filter(i=>Number.isInteger(i)&&i>=0&&i<result.parties.length):[];
+ result.regions=ElectaGeometry.normalize(p.regions||[]);result.overlay=p.overlay===true;return result;
+};
+
+renderAll();
+})();
