@@ -6,6 +6,7 @@ function validData(data){const result=C.issues(data);if(result.errors.length)thr
 function buildHTML({css,core,exporter,app,data,tool='results',theme='light'}){
  validData(data);if(!toolNames[tool])throw Error('Herramienta no válida.');
  if([css,core,exporter,app].some(s=>typeof s!=='string'||!s.trim()))throw Error('Faltan recursos para crear el HTML.');
+ if([css,core,exporter,app].some(s=>/^\s*(?:<!doctype|<html)/i.test(s))||!core.includes('ElectaCore=')||!exporter.includes('ElectaExports=')||!app.includes('function renderWidget('))throw Error('El servidor no ha devuelto los recursos de Electa. Recarga el editor o utiliza el HTML autónomo.');
  const pack=C.encode({version:1,data,tool,theme:theme==='dark'?'dark':'light'}),safe=s=>s.replace(/<\/script/gi,'<\\/script');
  const localCSS=css.replace(/@import\s+url\([^)]*\)\s*;/gi,'').replace(/@import\s+["'][^"']+["']\s*;/gi,'');
  return`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(data.title)} · ${toolNames[tool]}</title><style>${localCSS}</style></head><body><div id="app"></div><div id="toast" role="status"></div><script>${safe(core)}\n${safe(exporter)}\nwindow.ELECTA_EMBED=ElectaCore.decode('${pack}');\n${safe(app)}<\/script><\/body><\/html>`;
@@ -16,10 +17,16 @@ function csv(data){
  return'\ufeff'+[['nombre','votos','porcentaje','escanos','anteriores','color'],...data.parties.map(p=>[p.name,p.votes,p.pct,p.seats,p.previous,p.color])].map(r=>r.map(quote).join(';')).join('\r\n');
 }
 function publicURL(value){const url=new URL(String(value).trim());if(!['https:','http:'].includes(url.protocol)||url.username||url.password)throw Error('Introduce una dirección pública http o https sin credenciales.');return url.href;}
-function iframe({url,data,tool}){
- validData(data);if(!toolNames[tool])throw Error('Herramienta no válida.');const n=data.parties.length;
- const h=tool==='pacts'?420+n*80:tool==='results'?300+n*60:tool==='hemi'?640:tool==='compare'?310+n*75:560;
- return`<iframe src="${esc(publicURL(url))}" title="${toolNames[tool]} · ${esc(data.title)}" width="100%" height="${h}" style="display:block;width:100%;border:0;border-radius:12px" loading="lazy"></iframe>`;
+function initialHeight(data,tool){const n=data.parties.length;return tool==='pacts'?500+n*92:tool==='results'?380+n*72:tool==='hemi'?800:tool==='compare'?400+n*85:650;}
+function resizeScript(){
+ // Each copy owns its iframe; several pieces on the same page cannot resize one another.
+ return `<script>(function(){var frame=document.currentScript.previousElementSibling;function receive(event){if(!frame.isConnected){window.removeEventListener('message',receive);return;}if(event.source!==frame.contentWindow||!event.data||event.data.type!=='electa:resize')return;var h=event.data.height;if(typeof h==='number'&&Number.isFinite(h)&&h>=100&&h<=100000)frame.style.height=Math.ceil(h)+'px';}window.addEventListener('message',receive);frame.addEventListener('load',function(){frame.contentWindow.postMessage({type:'electa:measure'},'*');});})();<\/script>`;
+}
+function iframe({url,html,data,tool,autoResize=true}){
+ validData(data);if(!toolNames[tool])throw Error('Herramienta no válida.');
+ const inline=typeof html==='string';if(inline&&!html.trim())throw Error('No se ha preparado el contenido de la pieza.');
+ const source=inline?`srcdoc="${esc(html)}" sandbox="allow-scripts"`:`src="${esc(publicURL(url))}"`;
+ return `<iframe ${source} title="${esc(toolNames[tool]+' · '+data.title)}" width="100%" height="${initialHeight(data,tool)}" style="display:block;width:100%;border:0;border-radius:12px" loading="lazy"></iframe>`+(autoResize?'\n'+resizeScript():'');
 }
 function wrap(value,width){const text=String(value).replace(/\s+/g,' ').trim();const lines=[];let line='';for(const word of text.split(' ')){if(!word)continue;const pieces=word.length>width?word.match(new RegExp('.{1,'+width+'}','gu')):[word];for(const piece of pieces){if(line&&line.length+piece.length+1>width){lines.push(line);line='';}line+=(line?' ':'')+piece;}}if(line)lines.push(line);return lines.length?lines:[''];}
 function svg(data,{sort='seats',dateLabel='',theme='dark'}={}){

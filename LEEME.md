@@ -1,10 +1,10 @@
-# Electa by Dröma · 1.2.1
+# Electa by Dröma · 1.3.0
 
 Estudio electoral para periodistas y piezas interactivas para lectores.
 
 ## Instalar el módulo en Dröma
 
-Para abrirlo directamente en el ordenador, utiliza `ABRIR_ELECTA.html`, situado en la raíz del ZIP. Incluye estilos, fuentes, scripts y el estudio avanzado dentro del mismo archivo. También se entrega con el nombre `Electa_Droma_v1_2_1.html`.
+Para abrirlo directamente en el ordenador, utiliza `ABRIR_ELECTA.html`, situado en la raíz del ZIP. Incluye estilos, fuentes, scripts y el estudio avanzado dentro del mismo archivo. También se entrega con el nombre `Electa_Droma_v1_3_0.html`.
 
 Para instalar la web en el hosting:
 
@@ -12,8 +12,11 @@ Para instalar la web en el hosting:
 2. Abre esa dirección. No necesita compilación, base de datos ni instalación de paquetes.
 3. Entra en **Datos electorales**. Sustituye los partidos y cifras de demostración; indica la fuente, el territorio y la fecha.
 4. Selecciona una herramienta en **Mesa de trabajo** y prueba sus opciones. La vista de móvil muestra el comportamiento de la pieza en un espacio reducido.
-5. Pulsa **Insertar en mi web** y descarga el HTML interactivo.
-6. Sube ese HTML a una dirección pública de Dröma. Introduce esa dirección en el diálogo y copia el iframe en tu artículo o página.
+5. Pulsa **Poner en mi web**. Elige la herramienta y el tema; prueba la vista previa.
+6. En **Copiar y pegar**, pulsa **Copiar código para mi web**. Pega todo el código en un bloque **HTML personalizado** de tu página y guarda. No necesitas subir archivos. El editor debe admitir iframe con srcdoc y scripts; algunos gestores o roles los eliminan.
+7. Si tu gestor no admite ese contenido, usa **Subir un archivo**: descarga el HTML, súbelo a una carpeta pública, pega su dirección completa y copia el código generado. También puedes usar esa URL en el bloque iframe de tu gestor.
+
+La altura se adapta al contenido mediante un pequeño script. Si tu gestor lo elimina, desmarca **Adaptar la altura al contenido**; la pieza seguirá siendo interactiva con desplazamiento dentro del marco. **Ver el código** permite seleccionar y copiar manualmente o guardar el bloque completo en TXT. El enlace al editor privado no se utiliza para los lectores.
 
 El editor usa borradores locales. Si necesitas restringir el acceso al editor, aplica el acceso de usuarios de tu hosting o Dröma a la carpeta del editor y publica los HTML destinados a lectores en una carpeta pública independiente. No contiene autenticación propia.
 
@@ -29,7 +32,7 @@ Las interacciones del lector se mantienen en su página y no modifican los datos
 
 ## Actualizar una pieza publicada
 
-El HTML descargado contiene una copia de los datos de ese momento. Cambia las cifras en el editor, exporta de nuevo la misma herramienta y reemplaza el HTML publicado manteniendo su nombre y dirección. El iframe seguirá apuntando a él. Los lectores verán los nuevos datos al cargar la pieza; no existe actualización automática en páginas que ya estén abiertas. Comprueba o desactiva la caché del alojamiento para las piezas que actualices durante una cobertura.
+El código pegado y el HTML descargado contienen una copia de los datos de ese momento. Con **Copiar y pegar**, sustituye el bloque completo después de editar las cifras. Con **Subir un archivo**, sigue estos pasos: Cambia las cifras en el editor, exporta de nuevo la misma herramienta y reemplaza el HTML publicado manteniendo su nombre y dirección. El iframe seguirá apuntando a él. Los lectores verán los nuevos datos al cargar la pieza; no existe actualización automática en páginas que ya estén abiertas. Comprueba o desactiva la caché del alojamiento para las piezas que actualices durante una cobertura.
 
 ## Guardar y transferir proyectos
 
@@ -73,6 +76,11 @@ Los CSV que no incluyan porcentaje pero sí votos calculan el porcentaje sobre l
 Identidad visual del estudio de sonido de Dröma: negro #101110, paneles oliva #1c2317, acento lima #d9ff62 y texto claro #f1f4e9. Manrope se utiliza en el cuerpo y Space Grotesk en los titulares. Se aumenta la letra en navegación, formularios, tablas, botones, pies de gráfico y exportaciones. Las piezas conservan sus variantes clara y nocturna; los colores de los partidos siguen siendo editables por el periodista.
 
 
-## Entrega 1.2.1
+## Entrega 1.3.0
 
 Se utiliza un nombre de descarga nuevo para distinguir este paquete de los anteriores. El HTML autónomo incorpora todos los recursos visuales y de funcionamiento: mantiene la paleta negra, oliva y lima sin hojas de estilo externas. La versión para hosting utiliza URLs de recursos con versión para evitar la reutilización de CSS antiguo. Los proyectos guardados antes de la identidad Dröma se abren inicialmente en Nocturno Dröma, conservando sus datos; después se puede elegir y guardar el tema claro.
+
+
+## Exportación de la versión 1.3.0
+
+Flujo simplificado con copia directa de la pieza completa, vista previa del mismo HTML exportado, alternativa de subida guiada, mensajes de dirección inválida, reintento tras un fallo de carga y copia manual si el portapapeles no está disponible. Las inserciones ajustan su altura con mensajes validados por ventana de origen, sin interferir entre varias piezas. La exportación SVG de resultados aparece separada y se identifica como imagen estática. La estética Dröma se conserva en los dos métodos.
